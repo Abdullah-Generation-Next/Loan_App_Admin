@@ -33,12 +33,18 @@ apiClient.interceptors.response.use(
     return response;
   },
   (error) => {
+    // Only redirect on 401 for GET requests (not for PUT/POST/DELETE updates)
+    // This prevents redirecting when update operations fail due to auth
     if (error.response?.status === 401) {
-      // Unauthorized - clear auth and redirect to login
-      localStorage.removeItem('isAuthenticated');
-      localStorage.removeItem('authToken');
-      localStorage.removeItem('adminEmail');
-      window.location.href = '/';
+      const method = error.config?.method?.toUpperCase();
+      // Only redirect for GET requests, not for update operations
+      if (method === 'GET') {
+        localStorage.removeItem('isAuthenticated');
+        localStorage.removeItem('authToken');
+        localStorage.removeItem('adminEmail');
+        window.location.href = '/';
+      }
+      // For PUT/POST/DELETE, just reject the error so the component can handle it
     }
     return Promise.reject(error);
   }
@@ -47,9 +53,9 @@ apiClient.interceptors.response.use(
 export const API_ENDPOINTS = {
   GET_LOANS: 'loans/all/list',
   GET_USERS: 'auth/users',
-  // Add more endpoints as needed
-  // GET_LOAN_BY_ID: '/loans/:id',
-  // UPDATE_LOAN_STATUS: '/loans/:id/status',
+  UPDATE_LOAN: (id) => `loans/${id}`,
+  UPDATE_USER: (id) => `auth/users/${id}`,
+  UPDATE_LOAN_STATUS: (id) => `loans/${id}/status`,
 };
 
 export default apiClient;
